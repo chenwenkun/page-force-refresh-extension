@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            width: 320px;
+            padding: 0;
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin: 8px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: visible; /* 确保tooltip可以超出容器 */
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .subtitle {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-top: 4px;
+        }
+        
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .button-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .button {
+            flex: 1;
+            padding: 12px 16px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+        
+        .button:hover::before {
+            left: 100%;
+        }
+        
+        .refresh-btn {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+        }
+        
+        .refresh-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+        }
+        
+        .clear-btn {
+            background: linear-gradient(135deg, #f44336, #d32f2f);
+            color: white;
+            box-shadow: 0 4px 15px rgba(244, 67, 54, 0.3);
+        }
+        
+        .clear-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(244, 67, 54, 0.4);
+        }
+        
+        .button:active {
+            transform: translateY(0);
+        }
+        
+        .button.loading {
+            background: #95a5a6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .button.loading::after {
+            content: "";
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            border: 2px solid transparent;
+            border-top-color: #ffffff;
+            border-radius: 50%;
+            animation: button-loading-spinner 1s ease infinite;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        
+        @keyframes button-loading-spinner {
+            from {
+                transform: translate(-50%, -50%) rotate(0turn);
+            }
+            to {
+                transform: translate(-50%, -50%) rotate(1turn);
+            }
+        }
+        
+        .help-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: help;
+            transition: all 0.3s ease;
+            position: relative;
+            flex-shrink: 0;
+        }
+        
+        .help-icon:hover {
+            transform: scale(1.1);
+            background: linear-gradient(135deg, #2980b9, #3498db);
+        }
+        
+        .tooltip {
+            position: absolute;
+            right: -10px;
+            bottom: 28px;
+            background: #2c3e50;
+            color: white;
+            padding: 8px 10px;
+            border-radius: 6px;
+            font-size: 9px;
+            line-height: 1.3;
+            width: 200px;
+            opacity: 0;
+            visibility: hidden;
+            transform: scale(0) translateY(10px);
+            transform-origin: bottom right;
+            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            z-index: 10000;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            pointer-events: none;
+        }
+        
+        .tooltip::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            right: 20px;
+            width: 10px;
+            height: 10px;
+            background: #2c3e50;
+            transform: rotate(45deg);
+        }
+        
+        .help-icon:hover .tooltip {
+            opacity: 1;
+            visibility: visible;
+            transform: scale(1) translateY(0);
+            pointer-events: auto;
+        }
+        
+        /* 确保第二个tooltip不被遮挡 */
+        .button-wrapper:last-child .tooltip {
+            bottom: auto;
+            top: 28px;
+        }
+        
+        .button-wrapper:last-child .tooltip::after {
+            bottom: auto;
+            top: -5px;
+        }
+        
+        .success-message {
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 12px;
+            margin-top: 15px;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(39, 174, 96, 0.3);
+        }
+        
+        .success-message.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .info-section {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: 15px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .info-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .info-content {
+            font-size: 11px;
+            color: #5a6c7d;
+            line-height: 1.4;
+        }
+        
+        .feature-list {
+            margin: 8px 0;
+            padding-left: 0;
+            list-style: none;
+        }
+        
+        .feature-list li {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin: 4px 0;
+            font-size: 11px;
+            color: #5a6c7d;
+        }
+        
+        .feature-list li::before {
+            content: '✓';
+            color: #27ae60;
+            font-weight: bold;
+            font-size: 10px;
+        }
+        
+        .shortcuts {
+            background: rgba(52, 152, 219, 0.1);
+            border-radius: 8px;
+            padding: 8px 12px;
+            margin-top: 10px;
+            text-align: center;
+        }
+        
+        .shortcuts-text {
+            font-size: 10px;
+            color: #34495e;
+            font-weight: 500;
+        }
+        
+        .divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #bdc3c7, transparent);
+            margin: 15px 0;
+        }
+
+        /* 添加弹性动画效果 */
+        @keyframes tooltipBounceIn {
+            0% {
+                opacity: 0;
+                transform: scale(0) translateY(10px);
+            }
+            60% {
+                opacity: 1;
+                transform: scale(1.1) translateY(-2px);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .help-icon:hover .tooltip {
+            animation: tooltipBounceIn 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="title">
+                ⚡ 强制刷新工具
+            </h1>
+            <div class="subtitle">专业级缓存清理和页面刷新</div>
+        </div>
+        
+        <div class="button-group">
+            <div class="button-wrapper">
+                <button id="forceRefresh" class="button refresh-btn">
+                    🔄 强制刷新页面
+                </button>
+                <div class="help-icon" data-tooltip="refresh">
+                    ?
+                    <div class="tooltip">
+                        <strong>🔄 强制刷新页面</strong><br>
+                        • 清除HTTP缓存，重新下载资源<br>
+                        • 保留登录状态和本地数据<br>
+                        • 等同于 Ctrl+Shift+R<br>
+                        • 适用于：前端代码验证、样式更新<br>
+                        • 执行时间：0.5-2秒
+                    </div>
+                </div>
+            </div>
+            
+            <div class="button-wrapper">
+                <button id="clearAllRefresh" class="button clear-btn">
+                    🧹 完全清除+刷新
+                </button>
+                <div class="help-icon" data-tooltip="clear">
+                    ?
+                    <div class="tooltip">
+                        <strong>🧹 完全清除+刷新</strong><br>
+                        • 清除所有缓存数据（cookies、本地存储等）<br>
+                        • 模拟首次访问用户体验<br>
+                        • 会导致登录状态丢失<br>
+                        • 适用于：深度测试、登录功能验证<br>
+                        • 执行时间：2-5秒
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="divider"></div>
+        
+        <div class="shortcuts">
+            <div class="shortcuts-text">
+                💡 提示：选择合适的刷新模式可提高测试效率
+            </div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 12px;">
+            <div style="font-size: 10px; color: #95a5a6; font-weight: 500;">
+                👨‍💻 ：cwk
+            </div>
+        </div>
+        
+        <div id="successMessage" class="success-message">
+            ✅ 操作成功！正在刷新页面...
+        </div>
+    </div>
+    
+    <script src="popup.js"></script>
+</body>
+</html>

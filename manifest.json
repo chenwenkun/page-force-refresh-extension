@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "强制刷新插件",
+  "version": "1.0",
+  "description": "一键强制刷新页面，清除所有缓存",
+  "permissions": [
+    "tabs",
+    "activeTab",
+    "scripting",
+    "storage",
+    "browsingData"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "强制刷新"
+  },
+  "background": {
+    "service_worker": "background.js"
+  }
+}
